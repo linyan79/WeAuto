@@ -69,7 +69,7 @@ namespace WeAuto
 			
 			Transaction trans = new Transaction(doc, "AutoLt01");
 
-			CategorySelFilter rmFilter = new ThisApplication.CategorySelFilter(doc, BuiltInCategory.OST_Rooms);
+			CategorySelFilter rmFilter = new CategorySelFilter(doc, BuiltInCategory.OST_Rooms);
 			Reference elemRef = uiDoc.Selection.PickObject(ObjectType.Element, rmFilter, "Pick a Room");
 			Room rm = doc.GetElement(elemRef) as Room;
 			
@@ -78,7 +78,8 @@ namespace WeAuto
 			try
 			{
 				double rotate = thisView.RightDirection.AngleOnPlaneTo(XYZ.BasisX, XYZ.BasisZ);
-				RVTrf trf = RVTrf.CreateRotation(XYZ.BasisZ, - rotate);
+				RVTrf trf = RVTrf.CreateRotation(XYZ.BasisZ, rotate);
+				RVTrf inTrf = trf.Inverse;
 				
 				IList<IList<RMBD>> bdSetSet = rm.GetBoundarySegments(spOpt);
 				IList<RMBD> outBdSet = null;
@@ -89,7 +90,7 @@ namespace WeAuto
 	 				double bdLen = 0;
 	 				foreach (RMBD bd in bdSet) 
 	 				{
-	 					allBorders.Add(RVLine.CreateBound(bd.Curve.GetEndPoint(0), bd.Curve.GetEndPoint(1)));
+	 					allBorders.Add(GenLine(bd.Curve, trf));
 	 					bdLen += bd.Curve.Length;
 	 				}
 	 				
@@ -105,7 +106,7 @@ namespace WeAuto
 
 	 			foreach (RMBD rmBd in outBdSet) 
 	 			{
-	 				borders.Add(RVLine.CreateBound(rmBd.Curve.GetEndPoint(0), rmBd.Curve.GetEndPoint(1)));
+	 				borders.Add(GenLine(rmBd.Curve, trf));
 	 				
 	 				RVLine ln = rmBd.Curve as RVLine;
 	 				
@@ -113,6 +114,7 @@ namespace WeAuto
 	 				{
 	 					continue;
 	 				}
+	 				ln = GenLine(ln, trf);
 	 				
 	 				if(null == rmBd.Element)
 	 				{
@@ -166,15 +168,15 @@ namespace WeAuto
  				double w = right - left;
  				double h = top - bottom;
  				
- 				List<RVLine> internalWalls = FindInternalWalls(rm, thisView);
+ 				List<RVLine> internalWalls = FindInternalWalls(rm, thisView, trf);
  				allBorders.AddRange(internalWalls);
  				
  				List<UV> divs = DivLightings(w, h);
  				List<RVLine> deskOutlines = new List<RVLine>();
- 				List<UV> desks = GetRmDesks(rm, thisView, deskOutlines);
+ 				List<UV> desks = GetRmDesks(rm, thisView, deskOutlines, trf);
  				List<UVSet> uvSets = FindLightings(doc, divs, bdBx, thisView.GenLevel, desks.Count);
  				
- 				List<UVSet> mySets = FindBestUVSet(uvSets, desks, allBorders, rm);
+ 				List<UVSet> mySets = FindBestUVSet(uvSets, desks, allBorders, rm, trf);
  				
  				Dlg dlg = new Dlg();
  				if(mySets.Count > 1)
@@ -201,7 +203,7 @@ namespace WeAuto
 	 				{
 	 					uvSet = dlg.m_sets[dlg.index];
 	 				}
-	 				GenLightings(doc, uvSet.List, thisView.GenLevel);
+	 				GenLightings(doc, uvSet.List, thisView.GenLevel, inTrf, -rotate);
 					
 	 				trans.Commit();
 	 			}
@@ -212,6 +214,19 @@ namespace WeAuto
 			}
 		}
 		
+		static RVLine GenLine(RVCurve crv, RVTrf trf)
+		{
+			XYZ p0 = crv.GetEndPoint(0);
+			XYZ p1 = crv.GetEndPoint(1);
+			
+			return RVLine.CreateBound(GenXYZ(p0, trf), GenXYZ(p1, trf));
+		}
+		
+		static XYZ GenXYZ(XYZ pnt, RVTrf trf)
+		{
+			return trf.OfPoint(pnt);
+		}
+		
 		class Desk
 		{
 			public UV Position {get; private set;}
@@ -219,7 +234,7 @@ namespace WeAuto
 			
 		}
 		
-		static List<RVLine> FindInternalWalls(Room rm, RView thisView)
+		static List<RVLine> FindInternalWalls(Room rm, RView thisView, RVTrf trf)
 		{
 			List<RVLine> rslt = new List<RVLine>();
 			
@@ -247,6 +262,7 @@ namespace WeAuto
 				
 				if(rm.IsPointInRoom(pnt0) || rm.IsPointInRoom(pnt1))
 				{
+					ln = GenLine(ln, trf);
 					rslt.Add(ln);
 				}
 			}
@@ -254,7 +270,7 @@ namespace WeAuto
 			return rslt;
 		}
 		
-		static void GenLightings(RDoc doc, List<UV> set, Level lv)
+		static void GenLightings(RDoc doc, List<UV> set, Level lv, RVTrf trf, double angle)
 		{
 			FilteredElementCollector cll = new FilteredElementCollector(doc);
 			IList<Element> ltTyps = 
@@ -273,7 +289,10 @@ namespace WeAuto
 			foreach (UV uv in set) 
 			{
 				XYZ pos = new XYZ(DrawUtils.ToFt(uv.U), DrawUtils.ToFt(uv.V), 0);
+				pos = trf.OfPoint(pos);
+				RVLine axis = RVLine.CreateBound(pos, pos + XYZ.BasisZ);
 				FamilyInstance lt = doc.Create.NewFamilyInstance(pos, ltSym, lv, StructuralType.NonStructural);	
+				ElementTransformUtils.RotateElement(doc, lt.Id, axis, angle);
 				ids.Add(lt.Id);
 			}
 			
@@ -305,11 +324,14 @@ namespace WeAuto
 			}
 		}
 		
-		static List<UVSet> FindBestUVSet(List<UVSet> uvSets, List<UV> desks, List<RVLine> allBorders, Room rm)
+		static List<UVSet> FindBestUVSet(List<UVSet> uvSets, List<UV> desks, 
+		                                 List<RVLine> allBorders, Room rm, RVTrf trf)
 		{
 			int index = 0;
 			int minIndex = 0;
 			double minStd = double.MaxValue;
+			
+			RVTrf inTrf = trf.Inverse;
 			
 			SortedList<double, UVSet> sorted = new SortedList<double, UVSet>();
 			
@@ -338,6 +360,7 @@ namespace WeAuto
 					}	
 					
 					XYZ testXYZ = DrawUtils.ToXYZ(testPnt) + XYZ.BasisZ * rm.Level.ProjectElevation;
+					testXYZ = inTrf.OfPoint(testXYZ);
 					if(!rm.IsPointInRoom(testXYZ))
 					{
 						continue;
@@ -488,7 +511,7 @@ namespace WeAuto
 			return rslt;
 		}
 		
-		static List<UV> GetRmDesks(Room rm, RView thisView, List<RVLine> lns)
+		static List<UV> GetRmDesks(Room rm, RView thisView, List<RVLine> lns, RVTrf vTrf)
 		{
 			List<UV> rslt = new List<UV>();
 			RDoc doc = rm.Document;
@@ -517,7 +540,8 @@ namespace WeAuto
 					}
 					
 					LocationPoint locPnt = desk.Location as LocationPoint;
-					XYZ pnt = locPnt.Point;				
+					XYZ pnt = locPnt.Point;		
+					pnt = vTrf.OfPoint(pnt);
 					
 					Autodesk.Revit.DB.Transform trf = desk.GetTransform();
 					XYZ vx = desk.HandOrientation; //trf.OfVector(XYZ.BasisX);
@@ -531,6 +555,9 @@ namespace WeAuto
 					{
 						vy = -vy;
 					}
+					
+					vx = vTrf.OfVector(vx);
+					vy = vTrf.OfVector(vy);
 					
 					XYZ midPnt = pnt - vy * deskD * 0.5;
 					UV uv = new UV(DrawUtils.ToMM(midPnt.X), DrawUtils.ToMM(midPnt.Y));
@@ -658,34 +685,6 @@ namespace WeAuto
             }
             return true;
         }
-		
-		class CategorySelFilter : ISelectionFilter
-		{	
-			Document m_doc;
-			BuiltInCategory m_bCat;
-			
-			public CategorySelFilter(Document doc, BuiltInCategory bCat)
-			{
-				m_doc = doc;
-				m_bCat = bCat;
-			}
-			
-			public bool AllowElement(Element elem)
-			{
-				if(elem.Category.Id.IntegerValue == (int)m_bCat)
-				{
-					return true;
-				}
-				
-				return false;
-			}
-			
-			public bool AllowReference(Reference reference, XYZ position)
-			{
-				Element elem = m_doc.GetElement(reference);
-				return AllowElement(elem);
-			}
-		}
 		
 		static bool AddLnDict(Dictionary<int, List<RHLine>> linesDict, int dirIndex, RHLine ln)
 		{

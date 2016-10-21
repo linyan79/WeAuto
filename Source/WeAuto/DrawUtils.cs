@@ -12,8 +12,9 @@ using System.Drawing;
 using System.Windows.Forms;
 
 using Autodesk.Revit.DB;
-using Rhino.Geometry;
+using Autodesk.Revit.UI.Selection;
 using Rhino;
+using Rhino.Geometry;
 using Rhino.Geometry;
 using RApp = Autodesk.Revit.ApplicationServices.Application;
 using RDoc = Autodesk.Revit.DB.Document;
@@ -290,5 +291,33 @@ namespace WeAuto
         public double xMin;
         public double yMin;
         public Pen p;
-    }    
+    }   
+
+	class CategorySelFilter : ISelectionFilter
+	{	
+		Document m_doc;
+		BuiltInCategory m_bCat;
+		
+		public CategorySelFilter(Document doc, BuiltInCategory bCat)
+		{
+			m_doc = doc;
+			m_bCat = bCat;
+		}
+		
+		public bool AllowElement(Element elem)
+		{
+			if(elem.Category.Id.IntegerValue == (int)m_bCat)
+			{
+				return true;
+			}
+			
+			return false;
+		}
+		
+		public bool AllowReference(Reference reference, XYZ position)
+		{
+			Element elem = m_doc.GetElement(reference);
+			return AllowElement(elem);
+		}
+	}    
 }
