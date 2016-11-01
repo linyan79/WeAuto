@@ -1,5 +1,7 @@
 C:\ProgramData\Autodesk\Revit\Macros\2015\Revit\AppHookup\WeAuto\AddIn\WeAuto.dll
 C:\ProgramData\Autodesk\Revit\Macros\2015\Revit\AppHookup\WeAuto\Source\WeAuto\obj\Debug\WeAuto.dll
-C:\ProgramData\Autodesk\Revit\Macros\2015\Revit\AppHookup\WeAuto\Source\WeAuto\obj\Debug\WeAuto.csprojResolveAssemblyReference.cache
 C:\ProgramData\Autodesk\Revit\Macros\2015\Revit\AppHookup\WeAuto\Source\WeAuto\obj\Debug\WeAuto.Dlg.resources
 C:\ProgramData\Autodesk\Revit\Macros\2015\Revit\AppHookup\WeAuto\Source\WeAuto\obj\Debug\WeAuto.csproj.GenerateResource.Cache
+C:\ProgramData\Autodesk\Revit\Macros\2015\Revit\AppHookup\WeAuto\Source\WeAuto\obj\Debug\WeAuto.csprojResolveAssemblyReference.cache
+C:\ProgramData\Autodesk\Revit\Macros\2015\Revit\AppHookup\WeAuto\Addin\WeAuto.pdb
+C:\ProgramData\Autodesk\Revit\Macros\2015\Revit\AppHookup\WeAuto\Source\WeAuto\obj\Debug\WeAuto.pdb

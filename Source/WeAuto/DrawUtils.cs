@@ -228,6 +228,7 @@ namespace WeAuto
             }
 			bm.RotateFlip(RotateFlipType.Rotate180FlipX);
             pic.Image = bm;
+            
 		}
 		
 		public DrawUtils()

@@ -32,6 +32,12 @@
     <Reference Include="..\..\..\..\..\RevitAPIUI.dll">
       <Private>False</Private>
     </Reference>
+    <Reference Include="GeoAPI">
+      <HintPath>bin\Debug\GeoAPI.dll</HintPath>
+    </Reference>
+    <Reference Include="NetTopologySuite">
+      <HintPath>bin\Debug\NetTopologySuite.dll</HintPath>
+    </Reference>
     <Reference Include="Rhino3dmIO">
       <HintPath>..\..\AddIn\Rhino3dmIO.dll</HintPath>
     </Reference>
@@ -47,6 +53,7 @@
       <DependentUpon>Dlg.cs</DependentUpon>
     </Compile>
     <Compile Include="DrawUtils.cs" />
+    <Compile Include="FindInnerRoomUtils.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
     <Compile Include="ThisApplication.cs" />
     <Compile Include="ThisApplication.Designer.cs">
