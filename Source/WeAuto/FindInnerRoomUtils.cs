@@ -13,12 +13,12 @@ using NetTopologySuite.Geometries;
 using NetTopologySuite.Geometries.Utilities;
 using NetTopologySuite.IO;
 using NetTopologySuite.Operation.Polygonize;
-using Rhino.Geometry;
-using RHArc = Autodesk.Revit.DB.Arc;
-using RHCurve = Rhino.Geometry.Curve;
-using RHLine = Rhino.Geometry.LineCurve;
 
+using Autodesk.Revit.DB;
+
+using RHArc = Autodesk.Revit.DB.Arc;
 using RVLine = Autodesk.Revit.DB.Line;
+using RVPnt = Autodesk.Revit.DB.XYZ;
 
 namespace WeAuto
 {
@@ -27,12 +27,12 @@ namespace WeAuto
 	/// </summary>
 	public static class FindInnerRoomUtils
 	{
-		public static List<RVLine> FindInnerRooms(List<RHLine> polygon, List<RHLine> lines)
+		public static List<RVPnt> FindInnerRooms(List<RVLine> polygon, List<RVLine> lines)
 		{
 			CoordinateList pnts = new CoordinateList();
-			foreach (RHLine ln in polygon) 
+			foreach (Line ln in polygon) 
 			{
-				pnts.Add(ToCoord(ln.PointAtStart), true);
+				pnts.Add(ToCoord(ln.GetEndPoint(0)), true);
 			}
 			pnts.Add(pnts[0], true);
 			
@@ -40,7 +40,7 @@ namespace WeAuto
 			Polygon plg = new Polygon(lr);
 			
 			List<LineString> lss = new List<LineString>();
-			foreach (RHLine ln in lines) 
+			foreach (Line ln in lines) 
 			{
 				lss.Add(ToLS(ln));
 			}
@@ -50,15 +50,18 @@ namespace WeAuto
 		 	var nodedLinework = plg.Boundary.Union(mls);
 		 	var polygons = Polygonize(nodedLinework);
 		 	
-		 	List<RVLine> rslt = new List<RVLine>();
+		 	List<RVPnt> rslt = new List<RVPnt>();
             for (var i = 0; i < polygons.NumGeometries; i++)
             {
                 var candpoly = (IPolygon)polygons.GetGeometryN(i);
                 if (plg.Contains(candpoly.InteriorPoint))
                 {
-                    
+                    IPoint pnt = candpoly.Centroid;
+                    RVPnt rpnt = new Autodesk.Revit.DB.XYZ(DrawUtils.ToFt(pnt.X), DrawUtils.ToFt(pnt.Y), 0);
+                    rslt.Add(rpnt);
                 }
             }
+            return rslt;
 		}
 		
         internal static IGeometry Polygonize(IGeometry geometry)
@@ -72,14 +75,14 @@ namespace WeAuto
             return geometry.Factory.BuildGeometry(polyArray);
         }
 		
-		public static Coordinate ToCoord(Point3d pn)
+		public static Coordinate ToCoord(XYZ pn)
 		{
 			return new Coordinate(pn.X, pn.Y, 0);
 		}
 		
-		public static LineString ToLS(RHLine ln)
+		public static LineString ToLS(Line ln)
 		{
-			Coordinate[] cds = new Coordinate[2]{ToCoord(ln.PointAtStart), ToCoord(ln.PointAtEnd)};
+			Coordinate[] cds = new Coordinate[2]{ToCoord(ln.GetEndPoint(0)), ToCoord(ln.GetEndPoint(1))};
 			return new LineString(cds);
 		}
 	}

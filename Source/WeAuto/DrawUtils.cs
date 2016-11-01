@@ -12,15 +12,11 @@ using System.Drawing;
 using System.Windows.Forms;
 
 using Autodesk.Revit.DB;
+using Autodesk.Revit.DB.Architecture;
 using Autodesk.Revit.UI.Selection;
-using Rhino;
-using Rhino.Geometry;
-using Rhino.Geometry;
 using RApp = Autodesk.Revit.ApplicationServices.Application;
 using RDoc = Autodesk.Revit.DB.Document;
 using RHArc = Autodesk.Revit.DB.Arc;
-using RHCurve = Rhino.Geometry.Curve;
-using RHLine = Rhino.Geometry.LineCurve;
 using RMBD = Autodesk.Revit.DB.BoundarySegment;
 using RVArc = Autodesk.Revit.DB.Arc;
 using RVCurve = Autodesk.Revit.DB.Curve;
@@ -39,7 +35,7 @@ namespace WeAuto
 			}
 		}
 		
-		public static List<UVSet> FilterMirror(List<UVSet> uvSets, bool u, bool v)
+		public static List<UVSet> FilterMirrorSingle(List<UVSet> uvSets, bool u, bool v)
 		{
 			List<UVSet> rslt = new List<UVSet>();
 			foreach (UVSet uvSet in uvSets) 
@@ -64,6 +60,11 @@ namespace WeAuto
 					continue;
 				}
 				
+				if(uvSet.IndexListU.Count == 1 || uvSet.IndexListV.Count == 1)
+				{
+					continue;
+				}
+				
 				rslt.Add(uvSet);
 			}
 			return rslt;
@@ -79,14 +80,14 @@ namespace WeAuto
 		{
 			string tx = string.Empty;
 			tx += IndexListU[0].ToString();
-			for(int i=1;i<RawListU.Count;i++)
+			for(int i=1;i<IndexListU.Count;i++)
 			{
 				tx += "-" + IndexListU[i].ToString();
 			}
 			tx += ";\t\t";
 			
 			tx += IndexListV[0].ToString();
-			for(int i=1;i<RawListV.Count;i++)
+			for(int i=1;i<IndexListV.Count;i++)
 			{
 				tx += "-" + IndexListV[i].ToString();
 			}
@@ -115,52 +116,137 @@ namespace WeAuto
 		public List<int> IndexListV = new List<int>();		
 	}
 	
+	public class RoomData
+	{
+		public RDoc m_doc{get;set;}
+		public RView m_thisView{get;set;}
+		public Transform m_trf{get;set;}
+		public Room m_rm{get;set;}
+		
+		public double Width 
+		{
+			get
+			{
+				return BBx.Max.U - BBx.Min.U;
+			}
+		}
+		public double Depth 
+		{
+			get
+			{
+				return BBx.Max.V - BBx.Min.V;
+			}
+		}
+		
+		public List<UV> desks = null;
+		
+		public BoundingBoxUV BBx {get;set;}
+		public List<RVLine> ExBorder;
+		
+		public List<Line> AllBorder;
+		
+		public List<List<Line>> v0Lines = new List<List<Line>>();
+		public List<List<Line>> h0Lines = new List<List<Line>>();
+		public List<List<Line>> v1Lines = new List<List<Line>>();
+		public List<List<Line>> h1Lines = new List<List<Line>>();
+		
+		public Line vLn0;
+		public Line vLn1;
+		public Line hLn0;
+		public Line hLn1;
+		
+		public int m_index_vLn0 = 0;
+		public int m_index_vLn1 = 0;
+		public int m_index_hLn0 = 0;
+		public int m_index_hLn1 = 0;
+		
+		/// <summary>
+		/// 
+		/// </summary>
+		/// <param name="dir">0, left; 1, right; 2, down; 3, up</param>
+		public void NextAndUpdate(int dir, bool add)
+		{
+			switch (dir) 
+			{
+				case 0:
+					if(add)
+					{
+						m_index_vLn0++;
+					}
+					else
+					{
+						m_index_vLn0--;
+					}
+					m_index_vLn0 = GetObj(v0Lines, m_index_vLn0, out vLn0);
+					break;
+				case 1:
+					if(add)
+					{
+						m_index_vLn1++;
+					}
+					else
+					{
+						m_index_vLn1--;
+					}
+					m_index_vLn1 = GetObj(v1Lines, m_index_vLn1, out vLn1);						
+					break;
+				case 2:
+					if(add)
+					{
+						m_index_hLn0++;
+					}
+					else
+					{
+						m_index_hLn0--;
+					}
+					m_index_hLn0 = GetObj(h0Lines, m_index_hLn0, out hLn0);						
+					break;
+				default:
+					if(add)
+					{
+						m_index_hLn1++;
+					}
+					else
+					{
+						m_index_hLn1--;
+					}
+					m_index_hLn1 = GetObj(h1Lines, m_index_hLn1, out hLn1);						
+					break;
+			}
+			Update();
+		}
+		
+		public static int GetObj<T>(IList<List<T>> list, int index, out T obj)
+		{
+			int rslt = index;
+			if(index > list.Count - 1)
+			{
+				rslt = 0;
+			}
+			else if(index <0)
+			{
+				rslt = list.Count - 1;
+			}
+			obj = list[rslt][0];
+			return rslt;
+		}
+		
+		public void Update()
+		{	
+ 			double left = vLn0.GetEndPoint(0).X;
+ 			double right = vLn1.GetEndPoint(0).X;
+ 			double top = hLn0.GetEndPoint(0).Y;
+ 			double bottom = hLn1.GetEndPoint(0).Y;
+ 			
+ 			BBx = new BoundingBoxUV(left, bottom, right, top);			
+		}
+	}
+	
 	/// <summary>
 	/// Description of DrawUtils.
 	/// </summary>
 	public class DrawUtils
 	{
-        public static XYZ ToXYZ(Point3d pnt)
-        {
-            return new XYZ(ToFt(pnt.X), ToFt(pnt.Y), ToFt(pnt.Z));
-        }
-        
-        public static RVLine ToRVLine(RHLine ln)
-        {
-        	return RVLine.CreateBound(ToXYZ(ln.PointAtStart), ToXYZ(ln.PointAtEnd));
-        }
-
-        public static Vector3d ToVector3d(XYZ pnt)
-        {
-            return new Vector3d(ToMM(pnt.X), ToMM(pnt.Y), 0);
-        }
-
-        public static RHCurve ToRHCurve(RVCurve crv)
-        {
-            RVLine ln = crv as RVLine;
-            if (null != ln)
-            {
-                return ToWLine(ln);
-            }
-            RVArc arc = crv as RVArc;
-            if (null != arc)
-            {
-                // TMP
-                Point3d start = ToPoint3d(crv.GetEndPoint(0));
-                Point3d end = ToPoint3d(crv.GetEndPoint(1));
-
-                return new RHLine(start, end);
-            }
-            return null;
-        }
-
-        public static RHLine ToWLine(RVLine ln)
-        {
-            Point3d start = ToPoint3d(ln.GetEndPoint(0));
-            Point3d end = ToPoint3d(ln.GetEndPoint(1));
-
-            return new RHLine(start, end);
-        }
 
         public static RHArc ToWArc(RVArc ac)
         {
@@ -261,11 +347,6 @@ namespace WeAuto
             double y = (xy.Y - yMin) * ratio;
 
             return new System.Drawing.PointF((float)x, (float)y);
-        }
-        
-        public static Point3d ToPoint3d(XYZ pnt)
-        {
-            return new Point3d(ToMM(pnt.X), ToMM(pnt.Y), 0);
         }
 	}
 	

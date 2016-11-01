@@ -38,6 +38,8 @@ namespace WeAuto
 		public List<Line> m_outlns = new List<Line>();
 		public List<Line> m_deskslns = new List<Line>();
 		
+		public RoomData m_rmData;
+		
 		void BtnNextClick(object sender, EventArgs e)
 		{
 			index++;
@@ -86,6 +88,13 @@ namespace WeAuto
 				listBx.SelectedIndex = index;
 			}
 			
+			{
+				lns.Add(new ColorLine(m_rmData.vLn0, Pens.Chocolate));
+				lns.Add(new ColorLine(m_rmData.vLn1, Pens.Chocolate));
+				lns.Add(new ColorLine(m_rmData.hLn0, Pens.Chocolate));
+				lns.Add(new ColorLine(m_rmData.hLn1, Pens.Chocolate));
+			}
+			
 			DrawUtils.DrawCrvs(picBx, lns);		
 		}
 		
@@ -101,7 +110,7 @@ namespace WeAuto
 		
 		XYZ ToXYZ(UV uv)
 		{
-			return new XYZ(DrawUtils.ToFt(uv.U), DrawUtils.ToFt(uv.V), 0);
+			return new XYZ(uv.U, uv.V, 0);
 		}
 		
 		void DlgLoad(object sender, EventArgs e)
@@ -151,6 +160,34 @@ namespace WeAuto
 		
 		void ChBxVCheckedChanged(object sender, EventArgs e)
 		{
+			Regen();
+		}
+		
+		void BtnEdgUpClick(object sender, EventArgs e)
+		{
+			m_rmData.NextAndUpdate(2, true);
+			ThisApplication.UpdateDlg(this, m_rmData);
+			Regen();
+		}
+		
+		void BtnEdgLeftClick(object sender, EventArgs e)
+		{
+			m_rmData.NextAndUpdate(0, true);
+			ThisApplication.UpdateDlg(this, m_rmData);
+			Regen();
+		}
+		
+		void BtnEdgRightClick(object sender, EventArgs e)
+		{
+			m_rmData.NextAndUpdate(1, true);
+			ThisApplication.UpdateDlg(this, m_rmData);
+			Regen();
+		}
+		
+		void BtnEdgDownClick(object sender, EventArgs e)
+		{
+			m_rmData.NextAndUpdate(3, true);
+			ThisApplication.UpdateDlg(this, m_rmData);
 			Regen();
 		}
 	}

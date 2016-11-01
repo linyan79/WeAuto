@@ -12,21 +12,18 @@ using System.Linq;
 using System.Windows.Forms;
 
 using Autodesk.Revit.DB;
-using Autodesk.Revit.DB;
 using Autodesk.Revit.DB.Architecture;
 using Autodesk.Revit.DB.PointClouds;
 using Autodesk.Revit.DB.Structure;
 using Autodesk.Revit.UI;
-using Autodesk.Revit.UI;
 using Autodesk.Revit.UI.Selection;
-using Autodesk.Revit.UI.Selection;
-using Rhino;
-using Rhino.Geometry;
+//using Rhino;
+//using Rhino.Geometry;
 using RApp = Autodesk.Revit.ApplicationServices.Application;
 using RDoc = Autodesk.Revit.DB.Document;
 using RHArc = Autodesk.Revit.DB.Arc;
-using RHCurve = Rhino.Geometry.Curve;
-using RHLine = Rhino.Geometry.LineCurve;
+//using RHCurve = Rhino.Geometry.Curve;
+//using RHLine = Rhino.Geometry.LineCurve;
 using RMBD = Autodesk.Revit.DB.BoundarySegment;
 using RVArc = Autodesk.Revit.DB.Arc;
 using RVCurve = Autodesk.Revit.DB.Curve;
@@ -72,23 +69,25 @@ namespace WeAuto
 			Reference elemRef = uiDoc.Selection.PickObject(ObjectType.Element, rmFilter, "Pick a Room");
 			Room rm = doc.GetElement(elemRef) as Room;
 			
-			SpatialElementBoundaryOptions spOpt = new SpatialElementBoundaryOptions();
-			
 			try
 			{
-				List<RHLine> border = GetBorders(rm);
-				List<RVLine> internalWalls = FindInternalWalls(rm, thisView, RVTrf.Identity);
-				List<RHLine> lns = new List<LineCurve>();
+				List<Line> border = GetBorders(rm);
+				List<Line> internalWalls = FindInternalWalls(rm, thisView, RVTrf.Identity);
+				List<Line> lns = new List<Line>();
 				foreach (RVLine ln in internalWalls) 
 				{
-					lns.Add(DrawUtils.ToWLine(ln));
+					lns.Add(ln);
 				}
 				
-				FindInnerRoomUtils.FindInnerRooms(border, lns);
+				List<XYZ> rslt = FindInnerRoomUtils.FindInnerRooms(border, lns);
 	 			
 	 			if(trans.Start() == TransactionStatus.Started)
 	 			{
-					
+					foreach (XYZ pnt in rslt) 
+					{
+						RVArc arc = RVArc.Create(pnt, 5, 0, Math.PI, XYZ.BasisX, XYZ.BasisY);
+						doc.Create.NewDetailCurve(thisView, arc);
+					}
 	 				trans.Commit();
 	 			}
 			}
@@ -100,11 +99,11 @@ namespace WeAuto
 		
 		public static class Settings
 		{
-			public static double MaxDistance = 2500;
-			public static double MinDistance = 1400;
+			public static double MaxDistance = DrawUtils.ToFt(2400);
+			public static double MinDistance = DrawUtils.ToFt(1300);
 			
-			public static double MinDistanceToBlock = 300;
-			public static double MinDistanceToDesk = 1500;
+			public static double MinDistanceToBlock = DrawUtils.ToFt(300);
+			public static double MinDistanceToDesk = DrawUtils.ToFt(1500);
 		}
 		
 		public void AutoLt01()
@@ -120,123 +119,43 @@ namespace WeAuto
 			Reference elemRef = uiDoc.Selection.PickObject(ObjectType.Element, rmFilter, "Pick a Room");
 			Room rm = doc.GetElement(elemRef) as Room;
 			
-			SpatialElementBoundaryOptions spOpt = new SpatialElementBoundaryOptions();
-			
 			try
 			{
 				double rotate = thisView.RightDirection.AngleOnPlaneTo(XYZ.BasisX, XYZ.BasisZ);
 				RVTrf trf = RVTrf.CreateRotation(XYZ.BasisZ, rotate);
 				RVTrf inTrf = trf.Inverse;
-				
-				IList<IList<RMBD>> bdSetSet = rm.GetBoundarySegments(spOpt);
-				IList<RMBD> outBdSet = null;
-				double maxLen = 0;
-				List<RVLine> allBorders = new List<RVLine>();
-	 			foreach (IList<RMBD> bdSet in bdSetSet) 
-	 			{
-	 				double bdLen = 0;
-	 				foreach (RMBD bd in bdSet) 
-	 				{
-	 					allBorders.Add(GenLine(bd.Curve, trf));
-	 					bdLen += bd.Curve.Length;
-	 				}
-	 				
-	 				if(bdLen > maxLen)
-	 				{
-	 					maxLen = bdLen;
-	 					outBdSet = bdSet;
-	 				}
-	 			}
-	 			
-	 			List<RHLine> lns = new List<LineCurve>();
-	 			List<RVLine> borders = new List<RVLine>();
-
-	 			foreach (RMBD rmBd in outBdSet) 
-	 			{
-	 				borders.Add(GenLine(rmBd.Curve, trf));
-	 				
-	 				RVLine ln = rmBd.Curve as RVLine;
-	 				
-	 				if(null == ln)
-	 				{
-	 					continue;
-	 				}
-	 				ln = GenLine(ln, trf);
-	 				
-	 				if(null == rmBd.Element)
-	 				{
-	 					continue;
-	 				}
-	 				
-	 				Category cat = rmBd.Element.Category;
-	 				if(null == cat)
-	 				{
-	 					continue;
-	 				}
-	 				
-	 				if(cat.Id.IntegerValue != (int)BuiltInCategory.OST_Walls &&
-	 				  cat.Id.IntegerValue != (int)BuiltInCategory.OST_RvtLinks &&
-	 				  cat.Id.IntegerValue != (int)BuiltInCategory.OST_RoomSeparationLines)
-	 				{
-	 					continue;
-	 				}
-	 				
-	 				lns.Add(DrawUtils.ToWLine(ln));
-	 			}
-	 			
-	 			Dictionary<int, List<RHLine>> v0LinesDict = new Dictionary<int, List<LineCurve>>();
-	 			Dictionary<int, List<RHLine>> h0LinesDict = new Dictionary<int, List<LineCurve>>();
-	 			Dictionary<int, List<RHLine>> v1LinesDict = new Dictionary<int, List<LineCurve>>();
-	 			Dictionary<int, List<RHLine>> h1LinesDict = new Dictionary<int, List<LineCurve>>();
-	 			foreach (RHLine ln in lns) 
-	 			{
-	 				if(AddLnDict(h0LinesDict, 0, ln))
-	 					continue;
-	 				if(AddLnDict(v0LinesDict, 1, ln))
-	 					continue;
-	 				if(AddLnDict(h1LinesDict, 2, ln))
-	 					continue;
-	 				if(AddLnDict(v1LinesDict, 3, ln))
-	 					continue;
-	 			}
-	 			
-	 			RHLine vLn0 = GetLn(v0LinesDict, 1);
-	 			RHLine vLn1 = GetLn(v1LinesDict, 3);
-	 			RHLine hLn0 = GetLn(h0LinesDict, 0);
-	 			RHLine hLn1 = GetLn(h1LinesDict, 2);
-	 			
-	 			double left = vLn0.PointAtStart.X;
-	 			double right = vLn1.PointAtStart.X;
-	 			double top = hLn0.PointAtStart.Y;
-	 			double bottom = hLn1.PointAtStart.Y;
-	 			
-	 			BoundingBoxUV bdBx = new BoundingBoxUV(left, bottom, right, top);
-	 			
- 				double w = right - left;
- 				double h = top - bottom;
  				
- 				List<RVLine> internalWalls = FindInternalWalls(rm, thisView, trf);
+ 				RoomData rmData = GetRmData(rm, trf, thisView);
+ 				rmData.m_doc = doc;
+ 				rmData.m_thisView = thisView;
+ 				rmData.m_trf = trf;
+ 				rmData.m_rm = rm;
+ 				
+ 				List<Line> allBorders = new List<Line>(rmData.ExBorder);
+ 				
+ 				List<Line> internalWalls = FindInternalWalls(rm, thisView, trf);
  				allBorders.AddRange(internalWalls);
+ 				List<Line> deskOutlines = new List<Line>();
+ 				rmData.desks = GetRmDesks(rm, thisView, deskOutlines, trf);
+ 				rmData.AllBorder = allBorders;
  				
- 				List<UV> divs = DivLightings(w, h);
- 				List<RVLine> deskOutlines = new List<RVLine>();
- 				List<UV> desks = GetRmDesks(rm, thisView, deskOutlines, trf);
- 				List<UVSet> uvSets = FindLightings(doc, divs, bdBx, thisView.GenLevel, desks.Count, rm, trf);
- 				
- 				List<UVSet> mySets = FindBestUVSet(uvSets, desks, allBorders);
+// 				List<UV> divs = DivLightings(rmData.Width, rmData.Depth);
+// 				List<UVSet> uvSets = FindLightings(doc, divs, rmData.BBx, thisView.GenLevel, rmData.desks.Count, rm, trf);		
+// 				List<UVSet> mySets = FindBestUVSet(uvSets, rmData.desks, allBorders);
  				
  				Dlg dlg = new Dlg();
- 				if(mySets.Count > 1)
- 				{
-	 				dlg.m_rawSets = mySets;
-	 				dlg.m_outlns = allBorders;
-	 				dlg.m_deskslns = deskOutlines;
+ 				dlg.m_outlns = rmData.AllBorder;
+ 				dlg.m_deskslns = deskOutlines;
+ 				dlg.m_rmData = rmData;
+// 				if(mySets.Count > 1)
+// 				{
+ 					UpdateDlg(dlg, rmData);
 	 				
 	 				if(DialogResult.Cancel == dlg.ShowDialog())
 	 				{
 	 					return;
 	 				}
- 				}
+// 				}
 	 			
 	 			if(trans.Start() == TransactionStatus.Started)
 	 			{
@@ -245,12 +164,12 @@ namespace WeAuto
 //	 				doc.Create.NewDetailCurve(thisView, DrawUtils.ToRVLine(hLn0));
 //	 				doc.Create.NewDetailCurve(thisView, DrawUtils.ToRVLine(hLn1));
 	 				
-	 				UVSet uvSet = mySets[0];
-	 				if(mySets.Count > 1)
-	 				{
-	 					uvSet = dlg.m_sets[dlg.index];
-	 				}
-	 				GenLightings(doc, uvSet.List, thisView.GenLevel, inTrf, -rotate);
+//	 				UVSet uvSet = mySets[0];
+//	 				if(mySets.Count > 1)
+//	 				{
+//	 					uvSet = dlg.m_sets[dlg.index];
+//	 				}
+//	 				GenLightings(doc, uvSet.List, thisView.GenLevel, inTrf, -rotate);
 					
 	 				trans.Commit();
 	 			}
@@ -259,9 +178,150 @@ namespace WeAuto
 			{
 				MessageBox.Show(ex.ToString());
 			}
+		}	
+
+		public static void UpdateDlg(Dlg dlg, RoomData rmData)
+		{
+			List<UV> divs = DivLightings(rmData.Width, rmData.Depth);
+			List<UVSet> uvSets = FindLightings(rmData.m_doc, divs, rmData.BBx, rmData.m_thisView.GenLevel, rmData.desks.Count, rmData.m_rm, rmData.m_trf);		
+			List<UVSet> mySets = FindBestUVSet(uvSets, rmData.desks, rmData.AllBorder);
+			
+			dlg.m_rawSets = mySets;
 		}
 		
-		static List<RHLine> GetBorders(Room rm)
+		RoomData GetRmData(Room rm, Transform trf, RView thisView)
+		{
+			RoomData rmData = new RoomData();
+			
+			SpatialElementBoundaryOptions spOpt = new SpatialElementBoundaryOptions();
+			
+			IList<IList<RMBD>> bdSetSet = rm.GetBoundarySegments(spOpt);
+			IList<RMBD> outBdSet = null;
+			double maxLen = 0;
+			List<RVLine> allBorders = new List<RVLine>();
+ 			foreach (IList<RMBD> bdSet in bdSetSet) 
+ 			{
+ 				double bdLen = 0;
+ 				foreach (RMBD bd in bdSet) 
+ 				{
+ 					allBorders.Add(GenLine(bd.Curve, trf));
+ 					bdLen += bd.Curve.Length;
+ 				}
+ 				
+ 				if(bdLen > maxLen)
+ 				{
+ 					maxLen = bdLen;
+ 					outBdSet = bdSet;
+ 				}
+ 			}
+ 			
+ 			List<Line> lns = new List<Line>();
+ 			List<Line> borders = new List<Line>();
+
+ 			foreach (RMBD rmBd in outBdSet) 
+ 			{
+ 				borders.Add(GenLine(rmBd.Curve, trf));
+ 				
+ 				RVLine ln = rmBd.Curve as RVLine;
+ 				
+ 				if(null == ln)
+ 				{
+ 					continue;
+ 				}
+ 				ln = GenLine(ln, trf);
+ 				
+ 				if(null == rmBd.Element)
+ 				{
+ 					continue;
+ 				}
+ 				
+ 				Category cat = rmBd.Element.Category;
+ 				if(null == cat)
+ 				{
+ 					continue;
+ 				}
+ 				
+ 				if(cat.Id.IntegerValue != (int)BuiltInCategory.OST_Walls &&
+ 				  cat.Id.IntegerValue != (int)BuiltInCategory.OST_RvtLinks &&
+ 				  cat.Id.IntegerValue != (int)BuiltInCategory.OST_RoomSeparationLines)
+ 				{
+ 					continue;
+ 				}
+ 				
+ 				lns.Add(ln);
+ 			}
+ 			
+ 			Dictionary<int, List<Line>> v0LinesDict = new Dictionary<int, List<Line>>();
+ 			Dictionary<int, List<Line>> h0LinesDict = new Dictionary<int, List<Line>>();
+ 			Dictionary<int, List<Line>> v1LinesDict = new Dictionary<int, List<Line>>();
+ 			Dictionary<int, List<Line>> h1LinesDict = new Dictionary<int, List<Line>>();
+ 			
+ 			foreach (Line ln in lns) 
+ 			{
+ 				if(AddLnDict(h0LinesDict, 0, ln))
+ 					continue;
+ 				if(AddLnDict(v0LinesDict, 1, ln))
+ 					continue;
+ 				if(AddLnDict(h1LinesDict, 2, ln))
+ 					continue;
+ 				if(AddLnDict(v1LinesDict, 3, ln))
+ 					continue;
+ 			}
+ 			
+ 			BoundingBoxXYZ rmBBx = rm.get_BoundingBox(thisView);
+ 			XYZ min = rmBBx.Min;
+ 			XYZ max = rmBBx.Max;
+ 			min = rmBBx.Transform.OfPoint(min);
+ 			max = rmBBx.Transform.OfVector(max);
+ 			min = trf.Inverse.OfPoint(min);
+ 			max = trf.Inverse.OfPoint(max);
+ 			
+ 			Line vLn0 = Line.CreateBound(min + XYZ.BasisY, min);
+			Line vLn1 = Line.CreateBound(max - XYZ.BasisY, max);
+			Line hLn0 = Line.CreateBound(min, min + XYZ.BasisX);
+			Line hLn1 = Line.CreateBound(max, max - XYZ.BasisX);
+ 			
+ 			if(v0LinesDict.Count == 0)
+ 			{
+ 				List<Line> tmpLns = new List<Line>();
+ 				tmpLns.Add(vLn0);
+ 				v0LinesDict.Add(0, tmpLns);
+ 			}
+ 			if(v1LinesDict.Count == 0)
+ 			{
+ 				List<Line> tmpLns = new List<Line>();
+ 				tmpLns.Add(vLn1);
+ 				v1LinesDict.Add(0, tmpLns);
+ 			}
+ 			if(h0LinesDict.Count ==0)
+ 			{
+ 				List<Line> tmpLns = new List<Line>();
+ 				tmpLns.Add(hLn0);
+ 				h0LinesDict.Add(0, tmpLns);
+ 			}
+ 			if(h1LinesDict.Count == 0)
+ 			{
+ 				List<Line> tmpLns = new List<Line>();
+ 				tmpLns.Add(hLn1);
+ 				h1LinesDict.Add(0, tmpLns);
+ 			}
+ 			
+			rmData.m_index_vLn0 = GetLn(v0LinesDict, 1, ref rmData.vLn0);
+			rmData.m_index_vLn1 = GetLn(v1LinesDict, 3, ref rmData.vLn1);
+			rmData.m_index_hLn0 = GetLn(h0LinesDict, 0, ref rmData.hLn0);
+			rmData.m_index_hLn1 = GetLn(h1LinesDict, 2, ref rmData.hLn1);
+ 			
+			rmData.v0Lines = new List<List<Line>>(v0LinesDict.Values);
+			rmData.v1Lines = new List<List<Line>>(v1LinesDict.Values);
+			rmData.h0Lines = new List<List<Line>>(h0LinesDict.Values);
+			rmData.h1Lines = new List<List<Line>>(h1LinesDict.Values);
+			
+ 			rmData.ExBorder = allBorders;	
+ 			rmData.Update();
+ 			return rmData;
+		}
+		
+		static List<RVLine> GetBorders(Room rm)
 		{
 			SpatialElementBoundaryOptions spOpt = new SpatialElementBoundaryOptions();
 			
@@ -285,8 +345,8 @@ namespace WeAuto
  				}
  			}
  			
- 			List<RHLine> lns = new List<LineCurve>();
- 			List<RVLine> borders = new List<RVLine>();
+ 			List<Line> lns = new List<Line>();
+ 			List<Line> borders = new List<Line>();
 
  			foreach (RMBD rmBd in outBdSet) 
  			{
@@ -318,7 +378,7 @@ namespace WeAuto
  					continue;
  				}
  				
- 				lns.Add(DrawUtils.ToWLine(ln));
+ 				lns.Add(ln);
  			}
 			return lns; 			
 		}
@@ -397,7 +457,7 @@ namespace WeAuto
 			List<ElementId> ids = new List<ElementId>();
 			foreach (UV uv in set) 
 			{
-				XYZ pos = new XYZ(DrawUtils.ToFt(uv.U), DrawUtils.ToFt(uv.V), 0);
+				XYZ pos = new XYZ(uv.U, uv.V, 0);
 				pos = trf.OfPoint(pos);
 				RVLine axis = RVLine.CreateBound(pos, pos + XYZ.BasisZ);
 				FamilyInstance lt = doc.Create.NewFamilyInstance(pos, ltSym, lv, StructuralType.NonStructural);	
@@ -439,10 +499,10 @@ namespace WeAuto
 			
 			SortedList<double, UVSet> sorted = new SortedList<double, UVSet>();
 			
-			List<RHLine> blockLns = new List<LineCurve>();
+			List<Line> blockLns = new List<Line>();
 			foreach (RVLine rLn in allBorders) 
 			{
-				blockLns.Add(DrawUtils.ToWLine(rLn));
+				blockLns.Add(rLn);
 			}
 			
 			foreach (UVSet uvSet in uvSets) 
@@ -452,11 +512,11 @@ namespace WeAuto
 				foreach (UV uv in uvSet.List) 
 				{
 					bool tooClose = false;
-					Point3d testPnt = new Point3d(uv.U, uv.V, 0);
+					XYZ testPnt = new XYZ(uv.U, uv.V, 0);
 					
-					foreach (RHLine ln in blockLns) 
+					foreach (Line ln in blockLns) 
 					{
-						if(ln.Line.DistanceTo(testPnt, true) < Settings.MinDistanceToBlock)
+						if(ln.Distance(testPnt) < Settings.MinDistanceToBlock)
 						{
 							tooClose = true;
 							break;
@@ -488,8 +548,8 @@ namespace WeAuto
 				
 				if(skip)
 				{
-					index++;
-					continue;
+					// index++;
+					// continue;
 				}
 				
 				double std = uvList.Count * 10000 + GetAvg(distList);
@@ -522,6 +582,11 @@ namespace WeAuto
 		
 		public static double GetAvg(List<double> data)
 		{
+			if(data.Count == 0)
+			{
+				return 0;
+			}
+			
 	       	double dSum =0;  
 	       	double dAvg =0;  
 	         
@@ -659,7 +724,7 @@ namespace WeAuto
 					vy = vTrf.OfVector(vy);
 					
 					XYZ midPnt = pnt - vy * deskD * 0.5;
-					UV uv = new UV(DrawUtils.ToMM(midPnt.X), DrawUtils.ToMM(midPnt.Y));
+					UV uv = new UV(midPnt.X, midPnt.Y);
 					rslt.Add(uv);
 					
 					XYZ pnt2 = pnt - vy * deskD;
@@ -738,9 +803,15 @@ namespace WeAuto
 								}
 								
 								
-								Point3d testPnt = new Point3d(u, v, 0);
-								XYZ testXYZ = DrawUtils.ToXYZ(testPnt) + XYZ.BasisZ * rm.Level.ProjectElevation;
+								XYZ testPnt = new XYZ(u, v, 0);
+								XYZ testXYZ = testPnt + XYZ.BasisZ * rm.Level.ProjectElevation;
 								testXYZ = inTrf.OfPoint(testXYZ);
+								
+								int indexV = n+1+j*2;
+								if(!uvSet.RawListV.Contains(indexV))
+								{
+									uvSet.RawListV.Add(indexV);
+								}
 								
 								if(!rm.IsPointInRoom(testXYZ))
 								{
@@ -749,12 +820,6 @@ namespace WeAuto
 								
 								UV uvPos = new UV(u, v);
 								uvSet.List.Add(uvPos);
-								
-								int indexV = n+1+j*2;
-								if(!uvSet.RawListV.Contains(indexV))
-								{
-									uvSet.RawListV.Add(indexV);
-								}
 							}
 						}
 						
@@ -766,11 +831,11 @@ namespace WeAuto
 						
 						if(ltCount * 4 < deskCount)
 						{
-							continue;
+							// continue;
 						}
-						if(ltCount * 1.5 > (double)deskCount && (deskCount != 1 && deskCount != 2))
+						if(ltCount * 1.2 > (double)deskCount && (deskCount != 1 && deskCount != 2))
 						{
-							continue;
+							// continue;
 						}
 						
 						uvSets.Add(uvSet);
@@ -796,37 +861,37 @@ namespace WeAuto
             return true;
         }
 		
-		static bool AddLnDict(Dictionary<int, List<RHLine>> linesDict, int dirIndex, RHLine ln)
+		static bool AddLnDict(Dictionary<int, List<Line>> linesDict, int dirIndex, Line ln)
 		{
-			Vector3d dir = -Vector3d.XAxis;
+			XYZ dir = -XYZ.BasisX;
 			int index = 0;
 			switch (dirIndex) {
 				case 0:
-					dir = -Vector3d.XAxis;
+					dir = -XYZ.BasisX;
 					index = 1;
 					break;
 				case 1:
-					dir = - Vector3d.YAxis;
+					dir = - XYZ.BasisY;
 					index = 0;
 					break;
 				case 2:
-					dir = Vector3d.XAxis;
+					dir = XYZ.BasisX;
 					index = 1;
 					break;
 				case 3:
 				default:
-					dir = Vector3d.YAxis;
+					dir = XYZ.BasisY;
 					index = 0;
 					break;
 			}
 			
-			if(ln.Line.Direction.IsParallelTo(dir, RhinoMath.ToRadians(5)) > 0)
+			if(IsParallelTo(ln.Direction, dir, ToRadians(5)) > 0)
 			{
-				List<RHLine> vLns = null;
-				int y = (int)(ln.PointAtStart[index] / 10.0);
+				List<Line> vLns = null;
+				int y = (int)(ln.GetEndPoint(0)[index] * 10);
 				if(!linesDict.TryGetValue(y, out vLns))
 				{
-					vLns = new List<LineCurve>();
+					vLns = new List<Line>();
 					linesDict.Add(y, vLns);
 				}
 				vLns.Add(ln);
@@ -835,25 +900,44 @@ namespace WeAuto
 			return false;
 		}
 		
-		static RHLine GetLn(Dictionary<int, List<RHLine>> linesDict, int dirIndex)
+		static double ToRadians(double degree)
 		{
-			List<List<RHLine>> lnSetSet = new List<List<LineCurve>>(linesDict.Values);
-			
+			return degree * Math.PI / 180.0;
+		}
+		
+		static int IsParallelTo(XYZ d0, XYZ d1, double eps)
+		{
+			double r = d0.AngleTo(d1);
+			if(r<eps)
+			{
+				return 1;
+			}
+			if(Math.PI - r<eps)
+			{
+				return -1;
+			}
+			return 0;
+		}
+		
+		static int GetLn(Dictionary<int, List<Line>> linesDict, int dirIndex, ref Line rsltLn)
+		{
+			List<List<Line>> lnSetSet = new List<List<Line>>(linesDict.Values);
+			int rslt = 0;
 			double maxV = double.MinValue;
-			RHLine rslt = null;
-			foreach (List<RHLine> lnSet in lnSetSet) 
+			
+			foreach (List<Line> lnSet in lnSetSet) 
 			{
 				double len = 0;
-				foreach (RHLine ln in lnSet) 
+				foreach (Line ln in lnSet) 
 				{
-					len += ln.Line.Length;
+					len += ln.Length;
 				}
-				if(len < 500)
+				if(len < DrawUtils.ToFt(500))
 				{
 					continue;
 				}
 				
-				Point3d testPnt = lnSet[0].PointAtEnd;
+				XYZ testPnt = lnSet[0].GetEndPoint(1);
 				double v = 0;
 				switch (dirIndex) 
 				{
@@ -875,24 +959,26 @@ namespace WeAuto
 				if(len > maxV)
 				{
 					maxV = len;
-					rslt = lnSet[0];
+					rsltLn = lnSet[0];
 				}
+				
+				rslt++;
 			}
 			return rslt;
 		}
 
-		static RHLine GetLnOld(Dictionary<int, List<RHLine>> linesDict)
+		static Line GetLnOld(Dictionary<int, List<Line>> linesDict)
 		{
-			List<List<RHLine>> lnSetSet = new List<List<LineCurve>>(linesDict.Values);
+			List<List<Line>> lnSetSet = new List<List<Line>>(linesDict.Values);
 			
 			double maxLen = 0;
-			RHLine rslt = null;
-			foreach (List<RHLine> lnSet in lnSetSet) 
+			Line rslt = null;
+			foreach (List<Line> lnSet in lnSetSet) 
 			{
 				double len = 0;
-				foreach (RHLine ln in lnSet) 
+				foreach (Line ln in lnSet) 
 				{
-					len += ln.Line.Length;
+					len += ln.Length;
 				}
 				if(len > maxLen)
 				{
