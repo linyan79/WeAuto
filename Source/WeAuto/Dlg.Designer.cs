@@ -53,6 +53,7 @@ namespace WeAuto
 			this.ckBxLeft = new System.Windows.Forms.CheckBox();
 			this.ckBxTopBottom = new System.Windows.Forms.CheckBox();
 			this.ckBxLeftRight = new System.Windows.Forms.CheckBox();
+			this.lb2 = new System.Windows.Forms.Label();
 			((System.ComponentModel.ISupportInitialize)(this.picBx)).BeginInit();
 			this.SuspendLayout();
 			// 
@@ -69,10 +70,10 @@ namespace WeAuto
 			// 
 			// btnNext
 			// 
-			this.btnNext.Location = new System.Drawing.Point(90, 493);
+			this.btnNext.Location = new System.Drawing.Point(90, 534);
 			this.btnNext.Margin = new System.Windows.Forms.Padding(2);
 			this.btnNext.Name = "btnNext";
-			this.btnNext.Size = new System.Drawing.Size(76, 19);
+			this.btnNext.Size = new System.Drawing.Size(76, 24);
 			this.btnNext.TabIndex = 1;
 			this.btnNext.Text = "Next";
 			this.btnNext.UseCompatibleTextRendering = true;
@@ -81,10 +82,10 @@ namespace WeAuto
 			// 
 			// btnPrev
 			// 
-			this.btnPrev.Location = new System.Drawing.Point(9, 493);
+			this.btnPrev.Location = new System.Drawing.Point(9, 534);
 			this.btnPrev.Margin = new System.Windows.Forms.Padding(2);
 			this.btnPrev.Name = "btnPrev";
-			this.btnPrev.Size = new System.Drawing.Size(76, 19);
+			this.btnPrev.Size = new System.Drawing.Size(76, 24);
 			this.btnPrev.TabIndex = 1;
 			this.btnPrev.Text = "Previous";
 			this.btnPrev.UseCompatibleTextRendering = true;
@@ -93,10 +94,10 @@ namespace WeAuto
 			// 
 			// btnCancel
 			// 
-			this.btnCancel.Location = new System.Drawing.Point(770, 493);
+			this.btnCancel.Location = new System.Drawing.Point(767, 534);
 			this.btnCancel.Margin = new System.Windows.Forms.Padding(2);
 			this.btnCancel.Name = "btnCancel";
-			this.btnCancel.Size = new System.Drawing.Size(76, 19);
+			this.btnCancel.Size = new System.Drawing.Size(76, 24);
 			this.btnCancel.TabIndex = 1;
 			this.btnCancel.Text = "Cancel";
 			this.btnCancel.UseCompatibleTextRendering = true;
@@ -105,10 +106,10 @@ namespace WeAuto
 			// 
 			// btnCreate
 			// 
-			this.btnCreate.Location = new System.Drawing.Point(689, 493);
+			this.btnCreate.Location = new System.Drawing.Point(686, 534);
 			this.btnCreate.Margin = new System.Windows.Forms.Padding(2);
 			this.btnCreate.Name = "btnCreate";
-			this.btnCreate.Size = new System.Drawing.Size(76, 19);
+			this.btnCreate.Size = new System.Drawing.Size(76, 24);
 			this.btnCreate.TabIndex = 1;
 			this.btnCreate.Text = "Create";
 			this.btnCreate.UseCompatibleTextRendering = true;
@@ -117,10 +118,10 @@ namespace WeAuto
 			// 
 			// lb
 			// 
-			this.lb.Location = new System.Drawing.Point(180, 493);
+			this.lb.Location = new System.Drawing.Point(11, 488);
 			this.lb.Margin = new System.Windows.Forms.Padding(2, 0, 2, 0);
 			this.lb.Name = "lb";
-			this.lb.Size = new System.Drawing.Size(505, 19);
+			this.lb.Size = new System.Drawing.Size(541, 19);
 			this.lb.TabIndex = 2;
 			this.lb.UseCompatibleTextRendering = true;
 			// 
@@ -255,11 +256,20 @@ namespace WeAuto
 			this.ckBxLeftRight.UseVisualStyleBackColor = true;
 			this.ckBxLeftRight.CheckedChanged += new System.EventHandler(this.CkBxUpCheckedChanged);
 			// 
+			// lb2
+			// 
+			this.lb2.Location = new System.Drawing.Point(11, 507);
+			this.lb2.Margin = new System.Windows.Forms.Padding(2, 0, 2, 0);
+			this.lb2.Name = "lb2";
+			this.lb2.Size = new System.Drawing.Size(541, 19);
+			this.lb2.TabIndex = 2;
+			this.lb2.UseCompatibleTextRendering = true;
+			// 
 			// Dlg
 			// 
 			this.AutoScaleDimensions = new System.Drawing.SizeF(6F, 13F);
 			this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
-			this.ClientSize = new System.Drawing.Size(856, 522);
+			this.ClientSize = new System.Drawing.Size(856, 569);
 			this.Controls.Add(this.ckBxLeft);
 			this.Controls.Add(this.ckBxLeftRight);
 			this.Controls.Add(this.ckBxTopBottom);
@@ -271,6 +281,7 @@ namespace WeAuto
 			this.Controls.Add(this.chBxV);
 			this.Controls.Add(this.chBxH);
 			this.Controls.Add(this.listBx);
+			this.Controls.Add(this.lb2);
 			this.Controls.Add(this.lb);
 			this.Controls.Add(this.btnPrev);
 			this.Controls.Add(this.btnCreate);
@@ -284,6 +295,7 @@ namespace WeAuto
 			((System.ComponentModel.ISupportInitialize)(this.picBx)).EndInit();
 			this.ResumeLayout(false);
 		}
+		private System.Windows.Forms.Label lb2;
 		private System.Windows.Forms.CheckBox ckBxLeftRight;
 		private System.Windows.Forms.CheckBox ckBxTopBottom;
 		private System.Windows.Forms.CheckBox ckBxLeft;

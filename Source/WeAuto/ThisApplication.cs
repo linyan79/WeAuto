@@ -109,6 +109,7 @@ namespace WeAuto
 			UIDocument uiDoc = ActiveUIDocument;
 			RDoc doc = ActiveUIDocument.Document;
 			RView thisView = uiDoc.ActiveGraphicalView;
+			ME = this;
 			
 			Transaction trans = new Transaction(doc, "AutoLt01");
 
@@ -161,6 +162,16 @@ namespace WeAuto
 				MessageBox.Show(ex.ToString());
 			}
 		}	
+		
+		public static ThisApplication ME;
+		
+		public string LenToValue(double len)
+		{
+			UIDocument uiDoc = ActiveUIDocument;
+			RDoc doc = ActiveUIDocument.Document;
+			Units un = doc.GetUnits();
+			return UnitFormatUtils.Format(un, UnitType.UT_Length, len, false, false);
+		}
 		
 		void GenDims(RDoc doc, RoomData rmData, RView thisView, Transform inTrf, UV distUV)
 		{

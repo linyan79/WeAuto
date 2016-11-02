@@ -89,8 +89,12 @@ namespace WeAuto
 						AddLight(uv, lns, p);
 					}
 				}
-				lb.Text =  m_sets[index].LightingCount + " (Lighting Count) / " + 
+				UVSet thisSet = m_sets[index];
+				lb.Text = thisSet.LightingCount + " (Lighting Count) / " + 
 					(m_deskslns.Count / 4).ToString() + " (Desk Count)";
+					
+				lb2.Text = "X Distance: " + ThisApplication.ME.LenToValue(thisSet.DistanceUV.U) +
+					";\t\t  Y Distance: " + ThisApplication.ME.LenToValue(thisSet.DistanceUV.V);
 			}
 			
 			Pen p2 = new Pen(System.Drawing.Color.Purple, 2);
@@ -142,7 +146,7 @@ namespace WeAuto
 			
 			List<Line> lns = new List<Line>(dim.RefLns);
 			lns.Add(dim.LocLn);
-			clns.AddRange(Convert(lns, Pens.Pink));
+			clns.AddRange(Convert(lns, Pens.DarkOrange));
 		}
 		
 		void GenDim()
