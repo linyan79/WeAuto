@@ -49,16 +49,21 @@ namespace WeAuto
 			this.btnEdgLeft = new System.Windows.Forms.Button();
 			this.btnEdgDown = new System.Windows.Forms.Button();
 			this.btnEdgRight = new System.Windows.Forms.Button();
+			this.ckBxBottom = new System.Windows.Forms.CheckBox();
+			this.ckBxLeft = new System.Windows.Forms.CheckBox();
+			this.ckBxTopBottom = new System.Windows.Forms.CheckBox();
+			this.ckBxLeftRight = new System.Windows.Forms.CheckBox();
 			((System.ComponentModel.ISupportInitialize)(this.picBx)).BeginInit();
 			this.SuspendLayout();
 			// 
 			// picBx
 			// 
+			this.picBx.BackColor = System.Drawing.Color.White;
 			this.picBx.Location = new System.Drawing.Point(9, 10);
 			this.picBx.Margin = new System.Windows.Forms.Padding(2);
 			this.picBx.Name = "picBx";
 			this.picBx.Size = new System.Drawing.Size(543, 476);
-			this.picBx.SizeMode = System.Windows.Forms.PictureBoxSizeMode.CenterImage;
+			this.picBx.SizeMode = System.Windows.Forms.PictureBoxSizeMode.Zoom;
 			this.picBx.TabIndex = 0;
 			this.picBx.TabStop = false;
 			// 
@@ -123,7 +128,7 @@ namespace WeAuto
 			// 
 			this.listBx.Font = new System.Drawing.Font("Microsoft Sans Serif", 7.8F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
 			this.listBx.FormattingEnabled = true;
-			this.listBx.Location = new System.Drawing.Point(566, 63);
+			this.listBx.Location = new System.Drawing.Point(566, 35);
 			this.listBx.Margin = new System.Windows.Forms.Padding(2);
 			this.listBx.Name = "listBx";
 			this.listBx.Size = new System.Drawing.Size(282, 277);
@@ -139,7 +144,7 @@ namespace WeAuto
 			this.chBxH.Name = "chBxH";
 			this.chBxH.Size = new System.Drawing.Size(148, 20);
 			this.chBxH.TabIndex = 4;
-			this.chBxH.Text = "Mirror Horizontal";
+			this.chBxH.Text = "Mirror Left & Right";
 			this.chBxH.UseCompatibleTextRendering = true;
 			this.chBxH.UseVisualStyleBackColor = true;
 			this.chBxH.CheckedChanged += new System.EventHandler(this.ChBxHCheckedChanged);
@@ -148,19 +153,19 @@ namespace WeAuto
 			// 
 			this.chBxV.Checked = true;
 			this.chBxV.CheckState = System.Windows.Forms.CheckState.Checked;
-			this.chBxV.Location = new System.Drawing.Point(566, 34);
+			this.chBxV.Location = new System.Drawing.Point(689, 11);
 			this.chBxV.Margin = new System.Windows.Forms.Padding(2);
 			this.chBxV.Name = "chBxV";
 			this.chBxV.Size = new System.Drawing.Size(135, 20);
 			this.chBxV.TabIndex = 4;
-			this.chBxV.Text = "Mirror Vertical";
+			this.chBxV.Text = "Mirror Top & Bottom";
 			this.chBxV.UseCompatibleTextRendering = true;
 			this.chBxV.UseVisualStyleBackColor = true;
 			this.chBxV.CheckedChanged += new System.EventHandler(this.ChBxVCheckedChanged);
 			// 
 			// btnEdgUp
 			// 
-			this.btnEdgUp.Location = new System.Drawing.Point(626, 354);
+			this.btnEdgUp.Location = new System.Drawing.Point(648, 317);
 			this.btnEdgUp.Name = "btnEdgUp";
 			this.btnEdgUp.Size = new System.Drawing.Size(117, 23);
 			this.btnEdgUp.TabIndex = 5;
@@ -171,7 +176,7 @@ namespace WeAuto
 			// 
 			// btnEdgLeft
 			// 
-			this.btnEdgLeft.Location = new System.Drawing.Point(566, 383);
+			this.btnEdgLeft.Location = new System.Drawing.Point(588, 346);
 			this.btnEdgLeft.Name = "btnEdgLeft";
 			this.btnEdgLeft.Size = new System.Drawing.Size(117, 23);
 			this.btnEdgLeft.TabIndex = 6;
@@ -182,7 +187,7 @@ namespace WeAuto
 			// 
 			// btnEdgDown
 			// 
-			this.btnEdgDown.Location = new System.Drawing.Point(626, 412);
+			this.btnEdgDown.Location = new System.Drawing.Point(648, 375);
 			this.btnEdgDown.Name = "btnEdgDown";
 			this.btnEdgDown.Size = new System.Drawing.Size(117, 23);
 			this.btnEdgDown.TabIndex = 7;
@@ -193,7 +198,7 @@ namespace WeAuto
 			// 
 			// btnEdgRight
 			// 
-			this.btnEdgRight.Location = new System.Drawing.Point(686, 383);
+			this.btnEdgRight.Location = new System.Drawing.Point(708, 346);
 			this.btnEdgRight.Name = "btnEdgRight";
 			this.btnEdgRight.Size = new System.Drawing.Size(117, 23);
 			this.btnEdgRight.TabIndex = 8;
@@ -202,11 +207,63 @@ namespace WeAuto
 			this.btnEdgRight.UseVisualStyleBackColor = true;
 			this.btnEdgRight.Click += new System.EventHandler(this.BtnEdgRightClick);
 			// 
+			// ckBxBottom
+			// 
+			this.ckBxBottom.Location = new System.Drawing.Point(566, 418);
+			this.ckBxBottom.Name = "ckBxBottom";
+			this.ckBxBottom.Size = new System.Drawing.Size(139, 24);
+			this.ckBxBottom.TabIndex = 9;
+			this.ckBxBottom.Text = "Dimension Bottom";
+			this.ckBxBottom.UseCompatibleTextRendering = true;
+			this.ckBxBottom.UseVisualStyleBackColor = true;
+			this.ckBxBottom.CheckedChanged += new System.EventHandler(this.CkBxUpCheckedChanged);
+			// 
+			// ckBxLeft
+			// 
+			this.ckBxLeft.Location = new System.Drawing.Point(566, 448);
+			this.ckBxLeft.Name = "ckBxLeft";
+			this.ckBxLeft.Size = new System.Drawing.Size(104, 24);
+			this.ckBxLeft.TabIndex = 9;
+			this.ckBxLeft.Text = "Dimension Left";
+			this.ckBxLeft.UseCompatibleTextRendering = true;
+			this.ckBxLeft.UseVisualStyleBackColor = true;
+			this.ckBxLeft.CheckedChanged += new System.EventHandler(this.CkBxLeftCheckedChanged);
+			// 
+			// ckBxTopBottom
+			// 
+			this.ckBxTopBottom.Checked = true;
+			this.ckBxTopBottom.CheckState = System.Windows.Forms.CheckState.Checked;
+			this.ckBxTopBottom.Location = new System.Drawing.Point(681, 418);
+			this.ckBxTopBottom.Name = "ckBxTopBottom";
+			this.ckBxTopBottom.Size = new System.Drawing.Size(167, 24);
+			this.ckBxTopBottom.TabIndex = 9;
+			this.ckBxTopBottom.Text = "Has Top/Bottom Dimension";
+			this.ckBxTopBottom.UseCompatibleTextRendering = true;
+			this.ckBxTopBottom.UseVisualStyleBackColor = true;
+			this.ckBxTopBottom.CheckedChanged += new System.EventHandler(this.CkBxUpCheckedChanged);
+			// 
+			// ckBxLeftRight
+			// 
+			this.ckBxLeftRight.Checked = true;
+			this.ckBxLeftRight.CheckState = System.Windows.Forms.CheckState.Checked;
+			this.ckBxLeftRight.Location = new System.Drawing.Point(681, 448);
+			this.ckBxLeftRight.Name = "ckBxLeftRight";
+			this.ckBxLeftRight.Size = new System.Drawing.Size(167, 24);
+			this.ckBxLeftRight.TabIndex = 9;
+			this.ckBxLeftRight.Text = "Has Left/Right Dimension";
+			this.ckBxLeftRight.UseCompatibleTextRendering = true;
+			this.ckBxLeftRight.UseVisualStyleBackColor = true;
+			this.ckBxLeftRight.CheckedChanged += new System.EventHandler(this.CkBxUpCheckedChanged);
+			// 
 			// Dlg
 			// 
 			this.AutoScaleDimensions = new System.Drawing.SizeF(6F, 13F);
 			this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
 			this.ClientSize = new System.Drawing.Size(856, 522);
+			this.Controls.Add(this.ckBxLeft);
+			this.Controls.Add(this.ckBxLeftRight);
+			this.Controls.Add(this.ckBxTopBottom);
+			this.Controls.Add(this.ckBxBottom);
 			this.Controls.Add(this.btnEdgRight);
 			this.Controls.Add(this.btnEdgDown);
 			this.Controls.Add(this.btnEdgLeft);
@@ -227,6 +284,10 @@ namespace WeAuto
 			((System.ComponentModel.ISupportInitialize)(this.picBx)).EndInit();
 			this.ResumeLayout(false);
 		}
+		private System.Windows.Forms.CheckBox ckBxLeftRight;
+		private System.Windows.Forms.CheckBox ckBxTopBottom;
+		private System.Windows.Forms.CheckBox ckBxLeft;
+		private System.Windows.Forms.CheckBox ckBxBottom;
 		private System.Windows.Forms.Button btnEdgRight;
 		private System.Windows.Forms.Button btnEdgDown;
 		private System.Windows.Forms.Button btnEdgLeft;

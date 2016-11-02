@@ -75,7 +75,9 @@ namespace WeAuto
 			return nums[0] == nums[nums.Count -1];
 		}
 		
+		public UV DistanceUV;
 		public List<UV> List = new List<UV>();
+		
 		public override string ToString()
 		{
 			string tx = string.Empty;
@@ -84,7 +86,11 @@ namespace WeAuto
 			{
 				tx += "-" + IndexListU[i].ToString();
 			}
-			tx += ";\t\t";
+			
+			int emptySpaceCount = 15 - tx.Length;
+			string emptySpace = new String(' ', emptySpaceCount);
+			
+			tx += emptySpace + "\t";
 			
 			tx += IndexListV[0].ToString();
 			for(int i=1;i<IndexListV.Count;i++)
@@ -116,8 +122,34 @@ namespace WeAuto
 		public List<int> IndexListV = new List<int>();		
 	}
 	
+	public class DimData
+	{
+		public Line LocLn;
+		public List<Line> RefLns = new List<Line>();
+		
+		public bool IsEmpty
+		{
+			get
+			{
+				return LocLn == null || RefLns.Count == 0;
+			}
+		}
+	}
+	
 	public class RoomData
 	{
+		public DimData DimH;
+		public DimData DimV;
+		
+		public bool HasInRooms
+		{
+			get
+			{
+				return null != InRmList;
+			}
+		}
+		public List<InnerRoom> InRmList;
+		
 		public RDoc m_doc{get;set;}
 		public RView m_thisView{get;set;}
 		public Transform m_trf{get;set;}
@@ -138,12 +170,44 @@ namespace WeAuto
 			}
 		}
 		
+		public double LayoutWidth 
+		{
+			get
+			{
+				return LayoutBBx.Max.U - LayoutBBx.Min.U;
+			}
+		}
+		public double LayoutDepth 
+		{
+			get
+			{
+				return LayoutBBx.Max.V - LayoutBBx.Min.V;
+			}
+		}		
+		
 		public List<UV> desks = null;
 		
 		public BoundingBoxUV BBx {get;set;}
-		public List<RVLine> ExBorder;
+		public BoundingBoxUV LayoutBBx {get;set;}
 		
-		public List<Line> AllBorder;
+		List<Curve> m_ExBorder;
+		public List<Curve> ExBorder
+		{
+			get
+			{
+				return m_ExBorder;
+			}
+			set
+			{
+				m_ExBorder = value;
+				ExBorderPLs = Convert(m_ExBorder);
+			}
+		}
+		public List<Line> ExBorderPLs;
+		
+		public List<Curve> AllBorder;
+		
+		public List<Line> InternalWalls;
 		
 		public List<List<Line>> v0Lines = new List<List<Line>>();
 		public List<List<Line>> h0Lines = new List<List<Line>>();
@@ -159,6 +223,8 @@ namespace WeAuto
 		public int m_index_vLn1 = 0;
 		public int m_index_hLn0 = 0;
 		public int m_index_hLn1 = 0;
+		
+		
 		
 		/// <summary>
 		/// 
@@ -238,7 +304,51 @@ namespace WeAuto
  			double top = hLn0.GetEndPoint(0).Y;
  			double bottom = hLn1.GetEndPoint(0).Y;
  			
- 			BBx = new BoundingBoxUV(left, bottom, right, top);			
+ 			LayoutBBx = new BoundingBoxUV(left, bottom, right, top);			
+		}
+		
+		public static List<Line> Convert(List<Curve> crvs)
+		{
+			List<Line> clns = new List<Line>();
+			foreach (Curve crv in crvs) 
+			{
+				Line ln = crv as Line;
+				if(ln != null)
+				{
+					clns.Add(ln);
+				}
+				else
+				{
+					if(crv.Length > 1)
+					{
+						clns.AddRange(Tessellate(crv));
+					}	
+					else
+					{
+						Line lnb = Line.CreateBound(crv.GetEndPoint(0), crv.GetEndPoint(1));
+						clns.Add(lnb);
+					}
+				}
+			}
+			return clns;
+		}
+		
+		public static List<Line> Tessellate(Curve crv)
+		{
+			int count = (int)(crv.Length / 0.5);
+			double seg = 1.0 / (double)count;
+			
+			List<Line> lns = new List<Line>();
+			
+			for(int i = 0; i<count; i++)
+			{
+				XYZ pnt0 = crv.Evaluate(i * seg, true);
+				XYZ pnt1 = crv.Evaluate((i+1) * seg, true);
+				Line ln = Line.CreateBound(pnt0, pnt1);
+				lns.Add(ln);
+			}
+			
+			return lns;
 		}
 	}
 	
@@ -290,7 +400,7 @@ namespace WeAuto
             double w = xMax - xMin;
             double h = yMax - yMin;
 			
-            if(w>h)
+            if(w/h > (double)pic.Width / (double)pic.Height)
             {
             	dd.ratio = pic.Width / w * 0.8;
             }
@@ -301,20 +411,26 @@ namespace WeAuto
             dd.xMin = xMin;
             dd.yMin = yMin;
 
-            Bitmap bm = new Bitmap(pic.Width, pic.Height);
+            int bmW = (int)(w*dd.ratio / 0.8);
+            int bmH = (int)(h*dd.ratio / 0.8);
+            
+            dd.marginW = (float)(bmW * 0.1);
+            dd.marginH = (float)(bmH * 0.1);
+            
+            Bitmap bm = new Bitmap(bmW, bmH);
             Graphics g = Graphics.FromImage(bm);
 
             foreach (ColorLine crv in lns)
             {
-                PointF p0 = GetPointF(crv.Ln.GetEndPoint(0), dd.ratio, xMin, yMin);
-                PointF p1 = GetPointF(crv.Ln.GetEndPoint(1), dd.ratio, xMin, yMin);
+                PointF p0 = GetPointF(crv.Ln.GetEndPoint(0), dd);
+                PointF p1 = GetPointF(crv.Ln.GetEndPoint(1), dd);
                 g.DrawLine(crv.ColorPen, p0, p1);
 
                 PointF testP = new PointF(p0.X + (p1.X - p0.X) * 0.7f, p0.Y + (p1.Y - p0.Y) * 0.7f);
             }
 			bm.RotateFlip(RotateFlipType.Rotate180FlipX);
             pic.Image = bm;
-            
+
 		}
 		
 		public DrawUtils()
@@ -341,12 +457,12 @@ namespace WeAuto
             }
         }
 
-        public static System.Drawing.PointF GetPointF(XYZ xy, double ratio, double xMin, double yMin)
+        public static System.Drawing.PointF GetPointF(XYZ xy, DrawData dd) // double ratio, double xMin, double yMin, float marginW, float marginH)
         {
-            double x = (xy.X - xMin) * ratio;
-            double y = (xy.Y - yMin) * ratio;
+            double x = (xy.X - dd.xMin) * dd.ratio;
+            double y = (xy.Y - dd.yMin) * dd.ratio;
 
-            return new System.Drawing.PointF((float)x, (float)y);
+            return new System.Drawing.PointF((float)x + dd.marginW, (float)y + dd.marginH);
         }
 	}
 	
@@ -373,6 +489,8 @@ namespace WeAuto
         public double xMin;
         public double yMin;
         public Pen p;
+        public float marginW;
+        public float marginH;
     }   
 
 	class CategorySelFilter : ISelectionFilter
