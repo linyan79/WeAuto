@@ -95,6 +95,11 @@ namespace WeAuto
 					
 				lb2.Text = "X Distance: " + ThisApplication.ME.LenToValue(thisSet.DistanceUV.U) +
 					";\t\t  Y Distance: " + ThisApplication.ME.LenToValue(thisSet.DistanceUV.V);
+				
+				GenDim();
+				DrawDim(m_rmData.DimH, lns);
+				DrawDim(m_rmData.DimV, lns);
+				GenDrawInRmDim(m_rmData, lns, !ckBxLeft.Checked, !ckBxBottom.Checked);
 			}
 			
 			Pen p2 = new Pen(System.Drawing.Color.Purple, 2);
@@ -103,12 +108,8 @@ namespace WeAuto
 				lns.Add(new ColorLine(m_rmData.vLn1, p2));
 				lns.Add(new ColorLine(m_rmData.hLn0, p2));
 				lns.Add(new ColorLine(m_rmData.hLn1, p2));
-			}
+			}		
 			
-			GenDim();
-			DrawDim(m_rmData.DimH, lns);
-			DrawDim(m_rmData.DimV, lns);
-			GenDrawInRmDim(m_rmData, lns, !ckBxLeft.Checked, !ckBxBottom.Checked);
 			DrawUtils.DrawCrvs(picBx, lns);		
 		}
 		

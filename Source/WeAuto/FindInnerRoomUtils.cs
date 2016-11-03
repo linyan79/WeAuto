@@ -57,7 +57,7 @@ namespace WeAuto
 			vs.Add(center.Y);
 			vs.Add(enp.MaxY);
 
-			double off = ThisApplication.Settings.DimOffset;;
+			double off = ThisApplication.Settings.DimOffset * 0.5;
 			
 			{
 				double v0 = vs[0];
@@ -166,7 +166,7 @@ namespace WeAuto
             for (var i = 0; i < polygons.NumGeometries; i++)
             {
                 var candpoly = (IPolygon)polygons.GetGeometryN(i);
-                if(candpoly.Area > 150)
+                if(candpoly.Area > 150 || candpoly.Area < 40)
                 {
                 	continue;
                 }

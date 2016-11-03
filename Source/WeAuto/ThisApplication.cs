@@ -94,13 +94,13 @@ namespace WeAuto
 		
 		public static class Settings
 		{
-			public static double MaxDistance = DrawUtils.ToFt(2400);
-			public static double MinDistance = DrawUtils.ToFt(1300);
+			public static double MaxDistance = DrawUtils.ToFt(3000);
+			public static double MinDistance = DrawUtils.ToFt(2400);
 			
 			public static double MinDistanceToBlock = DrawUtils.ToFt(450);
 			public static double MinDistanceToDesk = DrawUtils.ToFt(1500);
 			
-			public static double DimOffset = DrawUtils.ToFt(1000);
+			public static double DimOffset = DrawUtils.ToFt(500);
 		}
 		
 		public void AutoLt01()
@@ -562,8 +562,8 @@ namespace WeAuto
 		
 		static void Div(double w, out int minNum, out int maxNum)
 		{		
-			minNum = (int)Math.Ceiling(w / (Settings.MaxDistance * 0.5));
-			maxNum = (int)Math.Floor(w / (Settings.MinDistance * 0.5));
+			minNum = (int)Math.Floor(w / (Settings.MaxDistance * 0.5));
+			maxNum = (int)Math.Ceiling(w / (Settings.MinDistance * 0.5));
 			
 			if(minNum < 2)
 			{
@@ -592,7 +592,7 @@ namespace WeAuto
 			
 			SortedList<double, UVSet> sorted = new SortedList<double, UVSet>();
 
-			if(rmData.m_rm.Area > 300)
+			if(rmData.m_rm.Area > 120)
 			{
 				rmData.InRmList = InnerRoom.FindInnerRooms(rmData.ExBorderPLs, rmData.InternalWalls);
 			}
@@ -773,9 +773,9 @@ namespace WeAuto
 				for(int j = aboutHNumMin; j <= aboutHNumMax; j++)
 				{
 					double halfHTest = h / j;
-					double diff = Math.Abs(halfHTest - halfWTest);
-					if((halfHTest/halfWTest < 1.2 && halfWTest/halfHTest < 1.2 )
-						|| (i == 1 || j == 1))
+
+					if((halfHTest/halfWTest < 1.3 && halfWTest/halfHTest < 1.3 )
+						|| (i == 2 || j == 2))
 					{
 						rslt.Add(new UV(i, j));
 					}
